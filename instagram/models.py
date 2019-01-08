@@ -89,6 +89,7 @@ class Media(ApiModel):
             new_media.videos = {}
             if entry.get('videos', False):
                 for version, version_info in six.iteritems(entry['videos']):
+                    version_info.pop('id', None)
                     new_media.videos[version] = Video.object_from_dictionary(version_info)
 
             ## Sometimes images return with type: 'videos'
@@ -106,8 +107,9 @@ class Media(ApiModel):
 
         new_media.comment_count = entry['comments']['count']
         new_media.comments = []
-        for comment in entry['comments'].get('data', []):
-            new_media.comments.append(Comment.object_from_dictionary(comment))
+        if "data" in entry["comments"]:
+            for comment in entry['comments'].get('data', []):
+                new_media.comments.append(Comment.object_from_dictionary(comment))
 
         new_media.users_in_photo = []
         if entry.get('users_in_photo'):
@@ -256,7 +258,9 @@ class UserInPhoto(ApiModel):
     def object_from_dictionary(cls, entry):
         user = None
         if 'user' in entry:
-            user = User.object_from_dictionary(entry['user'])
+            user = entry['user'].copy()
+            user['id'] = user.get('id', "")
+            user = User.object_from_dictionary(user)
 
         if 'position' in entry:
             position = Position(entry['position']['x'], entry['position']['y'])
